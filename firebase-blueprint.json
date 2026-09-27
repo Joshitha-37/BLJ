@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Apparel and T-shirt sourcing inquiry submitted by prospective clients",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "garmentType": { "type": "string" },
+        "isPrinted": { "type": "string" },
+        "printMethod": { "type": "string" },
+        "quantity": { "type": "string" },
+        "deliveryType": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "customerNote": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["garmentType", "quantity", "customerPhone"]
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "General communication messages sent to Balaji Thiruvengadam",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "phone", "message"]
+    }
+  },
+  "firestore": {
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/Inquiry" },
+      "description": "Collection of apparel sourcing orders and inquiries"
+    },
+    "/contacts/{contactId}": {
+      "schema": { "$ref": "#/entities/Contact" },
+      "description": "Collection of general contact queries and messages"
+    }
+  }
+}
