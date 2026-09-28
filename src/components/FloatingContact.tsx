@@ -14,7 +14,7 @@ export default function FloatingContact() {
       >
         <MessageCircle className="w-5 h-5" />
         <span className="hidden sm:inline text-xs font-bold tracking-wide">
-          WhatsApp Sourcing
+          WhatsApp Desk
         </span>
       </a>
 

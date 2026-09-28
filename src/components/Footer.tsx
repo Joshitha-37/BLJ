@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { COMPANY_INFO } from '../data/company';
-import { Phone, MessageCircle, Mail, MapPin, ArrowUp } from 'lucide-react';
+import { Phone, MessageCircle, Mail, MapPin, ArrowUp, ShieldCheck } from 'lucide-react';
 
 export default function Footer() {
   const scrollToTop = () => {
@@ -8,13 +8,13 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-slate-950 text-slate-300 border-t border-slate-800">
+    <footer className="bg-slate-950 text-slate-300 border-t border-slate-800 text-left">
       
       {/* Top Banner inside Footer */}
       <div className="border-b border-slate-800/80 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           
-          {/* Perfectly Aligned Brand Header */}
+          {/* Brand Header */}
           <Link to="/" className="flex items-center gap-3.5 group">
             <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-display font-black text-base shadow-sm">
               BLJ
@@ -24,7 +24,7 @@ export default function Footer() {
                 {COMPANY_INFO.name}
               </span>
               <span className="text-xs uppercase tracking-widest text-indigo-400 font-bold mt-0.5 leading-tight">
-                {COMPANY_INFO.tagline}
+                Online T-Shirt Store · Tiruppur
               </span>
             </div>
           </Link>
@@ -68,7 +68,7 @@ export default function Footer() {
               {COMPANY_INFO.name}
             </h4>
             <p className="text-xs text-slate-400 leading-relaxed">
-              International Sourcing Experts based in Tiruppur, India. Specialists in plain T-shirt procurement, custom job-work printing, and reliable delivery to brands, retailers, and institutions.
+              Online T-shirt clothing store based in Tiruppur, India. 100% super-combed cotton, heavyweight 180-240 GSM tees, bio-washed finishing, with convenient Pay on Delivery and a 48-Hour Return Guarantee.
             </p>
             <div className="pt-2 text-xs text-slate-300">
               <span className="text-slate-500 block">Founder & CEO:</span>
@@ -76,10 +76,10 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Col 2: Multi-Page Navigation Links */}
+          {/* Col 2: Online Store Navigation Links */}
           <div className="space-y-3">
             <h4 className="text-white font-display text-sm font-bold uppercase tracking-wider">
-              Explore Pages
+              Store Navigation
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
@@ -88,57 +88,57 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="hover:text-indigo-400 transition-colors">
-                  About BLJ APPEX GLOBAL
+                <Link to="/shop" className="hover:text-indigo-400 transition-colors">
+                  Shop All T-Shirts
                 </Link>
               </li>
               <li>
-                <Link to="/sourcing-process" className="hover:text-indigo-400 transition-colors">
-                  Sourcing & Supply Process
+                <Link to="/category/t-shirts" className="hover:text-indigo-400 transition-colors">
+                  T-Shirts Collection
                 </Link>
               </li>
               <li>
-                <Link to="/apparel-range" className="hover:text-indigo-400 transition-colors">
-                  Apparel & T-Shirt Catalog
+                <Link to="/wishlist" className="hover:text-indigo-400 transition-colors">
+                  My Wishlist
                 </Link>
               </li>
               <li>
-                <Link to="/printing-job-work" className="hover:text-indigo-400 transition-colors">
-                  Printing Job-Work Options
+                <Link to="/cart" className="hover:text-indigo-400 transition-colors">
+                  Shopping Cart
                 </Link>
               </li>
               <li>
-                <Link to="/inquiry" className="hover:text-indigo-400 transition-colors">
-                  Build Sourcing Inquiry
+                <Link to="/account" className="hover:text-indigo-400 transition-colors">
+                  My Customer Account & Orders
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-indigo-400 transition-colors">
-                  Contact Us
+                <Link to="/return-policy" className="hover:text-indigo-400 transition-colors font-bold text-indigo-400">
+                  48-Hour Return Policy
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Col 3: Core Apparel Services */}
+          {/* Col 3: Garment Specifications & Categories */}
           <div className="space-y-3">
             <h4 className="text-white font-display text-sm font-bold uppercase tracking-wider">
-              Sourcing Solutions
+              Apparel Categories
             </h4>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>• Plain T-Shirts in bulk form</li>
-              <li>• Screen & DTF Job-Work Printing</li>
-              <li>• Oversized Streetwear & Heavyweight Blanks</li>
-              <li>• Polo / Collar T-Shirts</li>
-              <li>• Hoodies & Sweatshirts</li>
-              <li>• Courier & Pay on Delivery Fulfillment</li>
+              <li>• Heavyweight Oversized Boxy Tees (240 GSM)</li>
+              <li>• Everyday Bio-Washed Crewneck Tees (180 GSM)</li>
+              <li>• Pique Knit Athletic Collar Polos (220 GSM)</li>
+              <li>• Mineral Acid-Wash Streetwear Drops (220 GSM)</li>
+              <li>• Shirts & Tops (Expanding Soon)</li>
+              <li>• Hoodies & Sweatshirts (Expanding Soon)</li>
             </ul>
           </div>
 
           {/* Col 4: Registered Office */}
           <div className="space-y-3">
             <h4 className="text-white font-display text-sm font-bold uppercase tracking-wider">
-              Head Office
+              Tiruppur Hub Office
             </h4>
             <div className="flex items-start gap-2 text-xs text-slate-400 leading-relaxed">
               <MapPin className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
@@ -173,7 +173,13 @@ export default function Footer() {
             © {new Date().getFullYear()} {COMPANY_INFO.name}. All rights reserved. Tiruppur, Tamil Nadu, India.
           </p>
           <div className="flex items-center gap-6">
-            <span className="text-slate-400">{COMPANY_INFO.tagline}</span>
+            <Link to="/return-policy" className="hover:text-white transition-colors">
+              Return Policy (48h)
+            </Link>
+            <Link to="/admin" className="hover:text-white transition-colors inline-flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Admin Portal (Restricted)</span>
+            </Link>
             <button
               onClick={scrollToTop}
               className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"

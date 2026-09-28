@@ -1,19 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Products Catalog
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Orders Collection
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if request.resource.data.customer != null
+                    && request.resource.data.items != null;
+      allow update, delete: if true;
+    }
+
+    // Settings Collection (Bank info, company email)
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Sourcing inquiries collection
     match /inquiries/{inquiryId} {
       allow read: if true;
-      allow create: if request.resource.data.garmentType is string
-                    && request.resource.data.customerPhone is string;
+      allow create: if true;
       allow update, delete: if true;
     }
 
     // Customer contacts collection
     match /contacts/{contactId} {
       allow read: if true;
-      allow create: if request.resource.data.name is string
-                    && request.resource.data.phone is string;
+      allow create: if true;
       allow update, delete: if true;
     }
 

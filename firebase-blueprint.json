@@ -1,47 +1,97 @@
 {
   "entities": {
-    "Inquiry": {
-      "title": "Inquiry",
-      "description": "Apparel and T-shirt sourcing inquiry submitted by prospective clients",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "garmentType": { "type": "string" },
-        "isPrinted": { "type": "string" },
-        "printMethod": { "type": "string" },
-        "quantity": { "type": "string" },
-        "deliveryType": { "type": "string" },
-        "customerName": { "type": "string" },
-        "customerPhone": { "type": "string" },
-        "customerNote": { "type": "string" },
-        "status": { "type": "string" },
-        "createdAt": { "type": "string" }
-      },
-      "required": ["garmentType", "quantity", "customerPhone"]
-    },
-    "Contact": {
-      "title": "Contact",
-      "description": "General communication messages sent to Balaji Thiruvengadam",
+    "Product": {
+      "title": "Product",
+      "description": "Apparel product catalog item",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "phone": { "type": "string" },
-        "email": { "type": "string" },
-        "message": { "type": "string" },
+        "slug": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "mrp": { "type": "number" },
+        "fabric": { "type": "string" },
+        "gsm": { "type": "number" },
+        "images": { "type": "array" },
+        "availableSizes": { "type": "array" },
+        "stock": { "type": "object" },
+        "badge": { "type": "string" },
         "createdAt": { "type": "string" }
       },
-      "required": ["name", "phone", "message"]
+      "required": ["name", "category", "price", "stock"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer ecommerce purchase order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customer": { "type": "object" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "orderStatus": { "type": "string" },
+        "utrNumber": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "deliveredAt": { "type": "string" },
+        "returnRequest": { "type": "object" }
+      },
+      "required": ["id", "customer", "items", "total", "paymentMethod", "orderStatus"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Application settings including bank info and company notification email",
+      "type": "object",
+      "properties": {
+        "companyEmail": { "type": "string" },
+        "bankDetails": { "type": "object" }
+      }
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Apparel sourcing inquiry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "garmentType": { "type": "string" },
+        "customerPhone": { "type": "string" }
+      }
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "General customer query",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" }
+      }
     }
   },
   "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Catalog of T-shirts and clothing products"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Ecommerce orders placed by customers"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Setting" },
+      "description": "Store configuration and bank transfer details"
+    },
     "/inquiries/{inquiryId}": {
       "schema": { "$ref": "#/entities/Inquiry" },
-      "description": "Collection of apparel sourcing orders and inquiries"
+      "description": "Legacy inquiries"
     },
     "/contacts/{contactId}": {
       "schema": { "$ref": "#/entities/Contact" },
-      "description": "Collection of general contact queries and messages"
+      "description": "Legacy contacts"
     }
   }
 }

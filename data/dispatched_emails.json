@@ -1,0 +1,20 @@
+[
+  {
+    "orderId": "BLJ-ORD-VERIFY",
+    "timestamp": "2026-09-28T07:43:04.923Z",
+    "customerEmail": "balaji-india@live.com",
+    "companyEmail": "balaji-india@live.com",
+    "orderTotal": 1598,
+    "paymentMethod": "bank_transfer",
+    "status": "DISPATCHED_TO_QUEUE"
+  },
+  {
+    "orderId": "BLJ-ORD-TEST1",
+    "timestamp": "2026-09-28T07:32:25.084Z",
+    "customerEmail": "ramesh@example.com",
+    "companyEmail": "balaji-india@live.com",
+    "orderTotal": 799,
+    "paymentMethod": "cod",
+    "status": "DISPATCHED_TO_QUEUE"
+  }
+]

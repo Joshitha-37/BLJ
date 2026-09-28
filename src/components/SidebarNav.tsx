@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, Link } from 'react-router-dom';
 import {
   Home,
-  Building2,
-  Package,
-  Layers,
-  Printer,
+  ShoppingBag,
+  Sparkles,
+  Heart,
+  ShoppingCart,
+  User,
+  ShieldCheck,
   FileText,
-  PhoneCall,
   Phone,
   MessageCircle,
   Mail,
@@ -15,29 +16,54 @@ import {
   Menu,
   X,
   ChevronRight,
-  User,
-  ShieldCheck,
 } from 'lucide-react';
 import { COMPANY_INFO } from '../data/company';
+import { useShop } from '../context/ShopContext';
 
 export default function SidebarNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const location = useLocation();
+  const { cartCount, wishlist } = useShop();
+  const [isAdminActive, setIsAdminActive] = useState(false);
+
+  useEffect(() => {
+    setIsAdminActive(Boolean(localStorage.getItem('blj_admin_session')));
+    const handleStorage = () => {
+      setIsAdminActive(Boolean(localStorage.getItem('blj_admin_session')));
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const navigationItems = [
-    { name: 'Home', path: '/', icon: Home, end: true },
-    { name: 'About Us', path: '/about', icon: Building2 },
-    { name: 'Sourcing Process', path: '/sourcing-process', icon: Package },
-    { name: 'Apparel Range', path: '/apparel-range', icon: Layers },
-    { name: 'Printing Job-Work', path: '/printing-job-work', icon: Printer },
-    { name: 'Quick Inquiry', path: '/inquiry', icon: FileText },
-    { name: 'Contact Information', path: '/contact', icon: PhoneCall },
+    { name: 'HOME', path: '/', icon: Home, end: true },
+    { name: 'SHOP', path: '/shop', icon: ShoppingBag },
+    { name: 'T-SHIRTS', path: '/category/t-shirts', icon: Sparkles, badgeText: 'Live' },
+    {
+      name: 'WISHLIST',
+      path: '/wishlist',
+      icon: Heart,
+      count: wishlist.length > 0 ? wishlist.length : undefined,
+    },
+    {
+      name: 'CART',
+      path: '/cart',
+      icon: ShoppingCart,
+      count: cartCount > 0 ? cartCount : undefined,
+    },
+    { name: 'ACCOUNT', path: '/account', icon: User },
+    { name: 'RETURN POLICY', path: '/return-policy', icon: FileText },
+    {
+      name: 'ADMIN HUB',
+      path: '/admin',
+      icon: ShieldCheck,
+      badgeText: isAdminActive ? 'Active' : 'Locked',
+    },
   ];
 
   const closeMobile = () => setMobileOpen(false);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all group ${
+    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all group ${
       isActive
         ? 'bg-indigo-600 text-white shadow-md font-bold'
         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -63,7 +89,7 @@ export default function SidebarNav() {
               {COMPANY_INFO.name}
             </span>
             <span className="text-[11px] uppercase tracking-wider font-bold text-indigo-400 leading-tight mt-0.5">
-              {COMPANY_INFO.tagline}
+              Online T-Shirt Store
             </span>
           </div>
         </Link>
@@ -75,9 +101,9 @@ export default function SidebarNav() {
         </div>
 
         {/* 2. Navigation Menu */}
-        <div className="space-y-1 pt-1">
+        <div className="space-y-1 pt-1 text-left">
           <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500 px-3 block mb-2">
-            Main Navigation
+            Store Navigation
           </span>
           <nav className="space-y-1">
             {navigationItems.map((item) => {
@@ -92,6 +118,19 @@ export default function SidebarNav() {
                 >
                   <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
                   <span className="flex-1">{item.name}</span>
+                  
+                  {item.badgeText && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white">
+                      {item.badgeText}
+                    </span>
+                  )}
+
+                  {typeof item.count === 'number' && (
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black bg-indigo-500 text-white shadow-xs">
+                      {item.count}
+                    </span>
+                  )}
+
                   <ChevronRight className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                 </NavLink>
               );
@@ -101,9 +140,9 @@ export default function SidebarNav() {
       </div>
 
       {/* 3. Action Buttons & Direct Sourcing Desk */}
-      <div className="space-y-4 pt-4 border-t border-slate-800">
+      <div className="space-y-4 pt-4 border-t border-slate-800 text-left">
         <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500 px-1 block">
-          Direct Sourcing Contact
+          Direct Customer Desk
         </span>
 
         {/* Working Buttons inside Left Menu */}
@@ -198,7 +237,7 @@ export default function SidebarNav() {
                 {COMPANY_INFO.name}
               </span>
               <span className="text-[9px] uppercase tracking-wider font-bold text-indigo-400 block leading-tight">
-                {COMPANY_INFO.tagline}
+                Online T-Shirt Store
               </span>
             </div>
           </Link>
@@ -206,19 +245,41 @@ export default function SidebarNav() {
 
         {/* Quick Action Icons on Mobile Bar */}
         <div className="flex items-center gap-2">
-          <a
-            href={`tel:${COMPANY_INFO.phoneRaw}`}
-            className="p-2 text-slate-200 bg-slate-900 border border-slate-800 rounded-lg hover:text-white"
-            aria-label="Call Balaji Thiruvengadam"
+          {/* Wishlist */}
+          <Link
+            to="/wishlist"
+            className="relative p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-900"
+            aria-label="Wishlist"
           >
-            <Phone className="w-4 h-4 text-emerald-400" />
-          </a>
+            <Heart className="w-5 h-5" />
+            {wishlist.length > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                {wishlist.length}
+              </span>
+            )}
+          </Link>
+
+          {/* Cart */}
+          <Link
+            to="/cart"
+            className="relative p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-900"
+            aria-label="Cart"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {cartCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-indigo-500 text-white text-[9px] font-black flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+
+          {/* WhatsApp */}
           <a
             href={COMPANY_INFO.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 text-white bg-emerald-600 rounded-lg hover:bg-emerald-500"
-            aria-label="WhatsApp Balaji Thiruvengadam"
+            aria-label="WhatsApp"
           >
             <MessageCircle className="w-4 h-4" />
           </a>
@@ -239,13 +300,13 @@ export default function SidebarNav() {
             {/* Close Button Header */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <span className="text-xs uppercase tracking-wider font-bold text-indigo-400">
-                Navigation Menu
+                Store Menu
               </span>
               <button
                 type="button"
                 onClick={closeMobile}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 cursor-pointer"
-                aria-label="Close Left Menu"
+                aria-label="Close Menu"
               >
                 <X className="w-5 h-5" />
               </button>
