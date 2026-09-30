@@ -22,13 +22,18 @@ export default function WishlistPage() {
               My Wishlist ({wishlistedProducts.length})
             </h1>
           </div>
-          <Link
-            to="/shop"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700"
-          >
-            <span>Browse All T-Shirts</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              No account required to save wishlist
+            </span>
+            <Link
+              to="/shop"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700"
+            >
+              <span>Browse All T-Shirts</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
 
         {wishlistedProducts.length === 0 ? (

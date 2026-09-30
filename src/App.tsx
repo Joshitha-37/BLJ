@@ -5,6 +5,7 @@ import SidebarNav from './components/SidebarNav';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
 import FloatingContact from './components/FloatingContact';
+import CustomerAuthModal from './components/CustomerAuthModal';
 import { testFirestoreConnection } from './lib/firebase';
 import { ShopProvider } from './context/ShopContext';
 
@@ -78,6 +79,9 @@ export default function App() {
             {/* Footer */}
             <Footer />
           </div>
+
+          {/* Customer Login & Sign Up Modal */}
+          <CustomerAuthModal />
 
           {/* Floating Action Controls */}
           <FloatingContact />

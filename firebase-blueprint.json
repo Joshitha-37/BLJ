@@ -70,9 +70,28 @@
         "name": { "type": "string" },
         "phone": { "type": "string" }
       }
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Registered customer profile and saved delivery address",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "address": { "type": "object" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
     }
   },
   "firestore": {
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Registered customer profiles and preferences"
+    },
     "/products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
       "description": "Catalog of T-shirts and clothing products"

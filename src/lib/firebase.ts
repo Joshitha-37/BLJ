@@ -24,7 +24,16 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { Product, Order, StoreSettings, ApparelSize, OrderStatus } from '../types/ecommerce';
+import {
+  Product,
+  Order,
+  StoreSettings,
+  ApparelSize,
+  OrderStatus,
+  CustomerProfile,
+  CustomerRegistrationData,
+  DeliveryAddress,
+} from '../types/ecommerce';
 import { INITIAL_PRODUCTS, DEFAULT_STORE_SETTINGS } from '../data/products';
 
 // Initialize Firebase App
@@ -51,6 +60,218 @@ export async function signInAdminWithGoogle(): Promise<User> {
 
 export async function signOutAdmin(): Promise<void> {
   await firebaseSignOut(auth);
+}
+
+export async function signOutCustomer(): Promise<void> {
+  await firebaseSignOut(auth);
+}
+
+/* -------------------------------------------------------------
+ * 0. Customer Authentication & Profile Management
+ * ----------------------------------------------------------- */
+
+/**
+ * 1-Click Sign in or Sign up for Customers with Google
+ */
+export async function signInCustomerWithGoogle(): Promise<CustomerProfile> {
+  const result = await signInWithPopup(auth, googleAuthProvider);
+  const user = result.user;
+  const email = (user.email || '').toLowerCase().trim();
+  const uid = user.uid;
+
+  const now = new Date().toISOString();
+  const custDocRef = doc(db, 'customers', uid);
+  const snap = await getDoc(custDocRef);
+
+  let profile: CustomerProfile;
+
+  if (snap.exists()) {
+    const existing = snap.data() as CustomerProfile;
+    profile = {
+      ...existing,
+      lastLoginAt: now,
+      photoURL: user.photoURL || existing.photoURL,
+    };
+    await updateDoc(custDocRef, {
+      lastLoginAt: now,
+      photoURL: profile.photoURL || null,
+    });
+  } else {
+    profile = {
+      uid,
+      email,
+      fullName: user.displayName || email.split('@')[0],
+      photoURL: user.photoURL || undefined,
+      createdAt: now,
+      lastLoginAt: now,
+      provider: 'google',
+    };
+    await setDoc(custDocRef, profile);
+  }
+
+  // Also save/update email-based pointer for lookup
+  if (email) {
+    try {
+      await setDoc(doc(db, 'customers', `email_${email}`), { uid, email }, { merge: true });
+    } catch {
+      // ignore
+    }
+  }
+
+  return profile;
+}
+
+/**
+ * Sign in Customer with Email & Password
+ */
+export async function signInCustomerWithEmail(
+  email: string,
+  passcode: string
+): Promise<CustomerProfile> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const emailDocRef = doc(db, 'customers', `email_${normalizedEmail}`);
+  const emailSnap = await getDoc(emailDocRef);
+
+  let targetUid: string = '';
+  if (emailSnap.exists()) {
+    targetUid = emailSnap.data().uid;
+  }
+
+  // If found by UID or lookup directly
+  let profileDoc = targetUid ? await getDoc(doc(db, 'customers', targetUid)) : null;
+  if (!profileDoc || !profileDoc.exists()) {
+    // Check direct email id
+    profileDoc = await getDoc(doc(db, 'customers', normalizedEmail));
+  }
+
+  if (profileDoc && profileDoc.exists()) {
+    const data = profileDoc.data() as any;
+    // If password was saved, verify it (or accept if none was set previously)
+    if (data.password && data.password !== passcode) {
+      throw new Error('Incorrect password. Please verify your credentials or use Google Sign-In.');
+    }
+
+    const now = new Date().toISOString();
+    await updateDoc(profileDoc.ref, { lastLoginAt: now });
+
+    const { password: _, ...cleanProfile } = data;
+    return cleanProfile as CustomerProfile;
+  }
+
+  throw new Error('No customer account found with this email. Please click "Create Account" to sign up.');
+}
+
+/**
+ * Register a new Customer Account
+ */
+export async function signUpCustomer(
+  data: CustomerRegistrationData
+): Promise<CustomerProfile> {
+  const normalizedEmail = data.email.toLowerCase().trim();
+  const now = new Date().toISOString();
+  const uid = `cust_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+  // Construct initial delivery address if provided
+  let address: DeliveryAddress | undefined;
+  if (data.doorNo && data.street && data.city && data.pinCode) {
+    address = {
+      fullName: data.fullName,
+      phone: data.phone,
+      email: normalizedEmail,
+      doorNo: data.doorNo,
+      street: data.street,
+      city: data.city,
+      district: data.district || data.city,
+      state: data.state || 'Tamil Nadu',
+      pinCode: data.pinCode,
+      landmark: data.landmark,
+    };
+  }
+
+  const profile: CustomerProfile = {
+    uid,
+    email: normalizedEmail,
+    fullName: data.fullName.trim(),
+    phone: data.phone.trim(),
+    address,
+    createdAt: now,
+    lastLoginAt: now,
+    provider: 'email',
+  };
+
+  // Save in Firestore
+  await setDoc(doc(db, 'customers', uid), {
+    ...profile,
+    password: data.password || '',
+  });
+
+  // Save email pointer
+  await setDoc(doc(db, 'customers', `email_${normalizedEmail}`), {
+    uid,
+    email: normalizedEmail,
+  });
+
+  return profile;
+}
+
+/**
+ * Update Customer Profile in Firestore
+ */
+export async function updateCustomerProfileInDb(profile: CustomerProfile): Promise<void> {
+  try {
+    const docRef = doc(db, 'customers', profile.uid);
+    await setDoc(docRef, profile, { merge: true });
+  } catch (err) {
+    console.warn('Failed to update customer profile in Firestore:', err);
+  }
+}
+
+/**
+ * Subscribe to only this customer's orders in real-time
+ */
+export function subscribeToCustomerOrders(
+  customerEmail: string,
+  onData: (orders: Order[]) => void,
+  onError?: (err: Error) => void
+) {
+  if (!customerEmail) {
+    onData([]);
+    return () => {};
+  }
+
+  try {
+    const normalized = customerEmail.toLowerCase().trim();
+    // Query orders matching this customer's email
+    const q = query(
+      collection(db, 'orders'),
+      where('customer.email', '==', normalized),
+      orderBy('createdAt', 'desc')
+    );
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => d.data() as Order);
+        onData(items);
+      },
+      (error) => {
+        console.warn('subscribeToCustomerOrders error (falling back to client filter):', error);
+        // Resilient fallback in case compound index is still building in Firestore
+        const fallbackQuery = query(collection(db, 'orders'), limit(100));
+        return onSnapshot(fallbackQuery, (snap) => {
+          const items = snap.docs
+            .map((d) => d.data() as Order)
+            .filter((o) => o.customer?.email?.toLowerCase().trim() === normalized)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          onData(items);
+        }, onError);
+      }
+    );
+  } catch (err: any) {
+    console.warn('subscribeToCustomerOrders catch:', err);
+    if (onError) onError(err);
+    return () => {};
+  }
 }
 
 /* -------------------------------------------------------------

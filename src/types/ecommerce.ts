@@ -110,6 +110,33 @@ export interface Order {
   orderStatus: OrderStatus;
   agreedToPolicies: boolean;
   returnRequest?: ReturnRequest;
+  userId?: string;
+}
+
+export interface CustomerProfile {
+  uid: string;
+  email: string;
+  fullName: string;
+  phone?: string;
+  photoURL?: string;
+  address?: DeliveryAddress;
+  createdAt: string;
+  lastLoginAt: string;
+  provider: 'google' | 'email';
+}
+
+export interface CustomerRegistrationData {
+  fullName: string;
+  email: string;
+  phone: string;
+  password?: string;
+  doorNo?: string;
+  street?: string;
+  city?: string;
+  district?: string;
+  state?: string;
+  pinCode?: string;
+  landmark?: string;
 }
 
 export interface BankDetails {

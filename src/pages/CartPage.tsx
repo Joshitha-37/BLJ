@@ -9,6 +9,8 @@ import {
   RotateCcw,
   Truck,
   Check,
+  Lock,
+  User,
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 
@@ -23,6 +25,9 @@ export default function CartPage() {
     updateCartQuantity,
     removeFromCart,
     storeSettings,
+    currentUser,
+    isCustomerLoggedIn,
+    openLoginModal,
   } = useShop();
 
   const freeDeliveryShortfall = Math.max(
@@ -254,6 +259,37 @@ export default function CartPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Account Requirement Status */}
+              {!isCustomerLoggedIn || !currentUser ? (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                    <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Account Required to Place Order</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    You can browse, cart, or wishlist freely. An account is required before your order can be placed.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openLoginModal(
+                        'Please log in or create an account to finalize your order.'
+                      )
+                    }
+                    className="mt-1 font-bold text-indigo-700 hover:text-indigo-900 underline text-[11px] block cursor-pointer"
+                  >
+                    Log In or Sign Up Now →
+                  </button>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-[11px]">
+                    Logged in as <strong>{currentUser.fullName}</strong>
+                  </span>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">

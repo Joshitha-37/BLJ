@@ -7,6 +7,11 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Customers Collection
+    match /customers/{customerId} {
+      allow read, write: if true;
+    }
+
     // Orders Collection
     match /orders/{orderId} {
       allow read: if true;

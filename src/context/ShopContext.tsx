@@ -7,6 +7,8 @@ import {
   Order,
   PaymentMethod,
   StoreSettings,
+  CustomerProfile,
+  CustomerRegistrationData,
 } from '../types/ecommerce';
 import { INITIAL_PRODUCTS, DEFAULT_STORE_SETTINGS } from '../data/products';
 import {
@@ -14,7 +16,15 @@ import {
   createOrderInFirestore,
   getStoreSettings,
   updateStoreSettings as updateSettingsInDb,
+  signInCustomerWithGoogle,
+  signInCustomerWithEmail,
+  signUpCustomer,
+  updateCustomerProfileInDb,
+  subscribeToCustomerOrders,
+  signOutCustomer,
+  auth,
 } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface ShopContextType {
   products: Product[];
@@ -43,6 +53,25 @@ interface ShopContextType {
   updateStoreSettings: (newSettings: StoreSettings) => Promise<void>;
   getProductById: (id: string) => Product | undefined;
   getProductBySlug: (slug: string) => Product | undefined;
+
+  // Customer Authentication & Profile
+  currentUser: CustomerProfile | null;
+  isCustomerLoggedIn: boolean;
+  loginWithGoogle: () => Promise<CustomerProfile>;
+  loginWithEmail: (email: string, pass: string) => Promise<CustomerProfile>;
+  registerCustomer: (data: CustomerRegistrationData) => Promise<CustomerProfile>;
+  logoutCustomer: () => Promise<void>;
+  updateCustomerProfile: (data: Partial<CustomerProfile>) => Promise<void>;
+
+  // Global Auth Modal controls
+  authModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+  authModalMode: 'login' | 'signup';
+  setAuthModalMode: (mode: 'login' | 'signup') => void;
+  authPromptReason: string | null;
+  openLoginModal: (reason?: any) => void;
+  openSignUpModal: (reason?: any) => void;
+  closeAuthModal: () => void;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -51,10 +80,26 @@ const CART_STORAGE_KEY = 'blj_cart_v2';
 const WISHLIST_STORAGE_KEY = 'blj_wishlist_v2';
 const ADDRESS_STORAGE_KEY = 'blj_address_v2';
 const ORDERS_STORAGE_KEY = 'blj_orders_v2';
+const CUSTOMER_USER_KEY = 'blj_customer_user_v2';
 
 export function ShopProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Customer Auth State
+  const [currentUser, setCurrentUser] = useState<CustomerProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOMER_USER_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  const [authPromptReason, setAuthPromptReason] = useState<string | null>(null);
+
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
@@ -109,6 +154,64 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  // Listen to Customer Orders for the logged in user
+  useEffect(() => {
+    if (!currentUser || !currentUser.email) {
+      // Load orders from local storage for guest
+      try {
+        const local = localStorage.getItem(ORDERS_STORAGE_KEY);
+        if (local) setCustomerOrders(JSON.parse(local));
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    const unsub = subscribeToCustomerOrders(
+      currentUser.email,
+      (orders) => {
+        // Orders filtered to only this customer
+        setCustomerOrders(orders);
+        // Also persist locally as cache
+        try {
+          localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+        } catch {
+          // ignore
+        }
+      },
+      (err) => {
+        console.warn('Customer orders subscription notice:', err);
+      }
+    );
+
+    return () => unsub();
+  }, [currentUser]);
+
+  // Sync Firebase Auth state for customer
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user && user.email) {
+        // Check if there is already a customer user session
+        const currentSaved = localStorage.getItem(CUSTOMER_USER_KEY);
+        if (!currentSaved) {
+          const profile: CustomerProfile = {
+            uid: user.uid,
+            email: user.email.toLowerCase().trim(),
+            fullName: user.displayName || user.email.split('@')[0],
+            photoURL: user.photoURL || undefined,
+            createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+            provider: 'google',
+          };
+          setCurrentUser(profile);
+          localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(profile));
+        }
+      }
+    });
+
+    return () => unsub();
+  }, []);
+
   // Save Cart to LocalStorage
   useEffect(() => {
     try {
@@ -127,14 +230,22 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     }
   }, [wishlist]);
 
-  // Save Orders to LocalStorage
+  // Save Current User to LocalStorage
   useEffect(() => {
     try {
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(customerOrders));
+      if (currentUser) {
+        localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(currentUser));
+        if (currentUser.address && !savedAddress) {
+          setSavedAddress(currentUser.address);
+          localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(currentUser.address));
+        }
+      } else {
+        localStorage.removeItem(CUSTOMER_USER_KEY);
+      }
     } catch (e) {
-      console.warn('Could not save orders:', e);
+      console.warn('Could not save user:', e);
     }
-  }, [customerOrders]);
+  }, [currentUser, savedAddress]);
 
   const saveSavedAddress = (addr: DeliveryAddress) => {
     setSavedAddress(addr);
@@ -142,6 +253,12 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(addr));
     } catch (e) {
       console.warn('Could not save address:', e);
+    }
+
+    if (currentUser) {
+      const updatedUser = { ...currentUser, address: addr };
+      setCurrentUser(updatedUser);
+      updateCustomerProfileInDb(updatedUser);
     }
   };
 
@@ -256,6 +373,15 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     paymentMethod: PaymentMethod,
     utrNumber?: string
   ): Promise<{ success: boolean; order?: Order; error?: string }> => {
+    // 1. Account Requirement Verification
+    if (!currentUser) {
+      openLoginModal('Please log in or create an account to finalize your order.');
+      return {
+        success: false,
+        error: 'Account required: Please log in or create an account before placing your order.',
+      };
+    }
+
     if (cart.length === 0) {
       return { success: false, error: 'Your cart is empty.' };
     }
@@ -306,6 +432,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       utrNumber: utrNumber?.trim() || undefined,
       orderStatus,
       agreedToPolicies: true,
+      userId: currentUser?.uid,
     };
 
     try {
@@ -343,6 +470,75 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     await updateSettingsInDb(newSettings);
   };
 
+  // Customer Auth Methods
+  const loginWithGoogle = async (): Promise<CustomerProfile> => {
+    const profile = await signInCustomerWithGoogle();
+    setCurrentUser(profile);
+    localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(profile));
+    if (profile.address) {
+      setSavedAddress(profile.address);
+      localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(profile.address));
+    }
+    setAuthModalOpen(false);
+    return profile;
+  };
+
+  const loginWithEmail = async (email: string, pass: string): Promise<CustomerProfile> => {
+    const profile = await signInCustomerWithEmail(email, pass);
+    setCurrentUser(profile);
+    localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(profile));
+    if (profile.address) {
+      setSavedAddress(profile.address);
+      localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(profile.address));
+    }
+    setAuthModalOpen(false);
+    return profile;
+  };
+
+  const registerCustomer = async (data: CustomerRegistrationData): Promise<CustomerProfile> => {
+    const profile = await signUpCustomer(data);
+    setCurrentUser(profile);
+    localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(profile));
+    if (profile.address) {
+      setSavedAddress(profile.address);
+      localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify(profile.address));
+    }
+    setAuthModalOpen(false);
+    return profile;
+  };
+
+  const logoutCustomer = async (): Promise<void> => {
+    await signOutCustomer();
+    setCurrentUser(null);
+    localStorage.removeItem(CUSTOMER_USER_KEY);
+    // Keep cart and products intact
+  };
+
+  const updateCustomerProfile = async (data: Partial<CustomerProfile>): Promise<void> => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...data };
+    setCurrentUser(updated);
+    localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(updated));
+    await updateCustomerProfileInDb(updated);
+  };
+
+  const openLoginModal = (reason?: any) => {
+    setAuthPromptReason(typeof reason === 'string' ? reason : null);
+    setAuthModalMode('login');
+    setAuthModalOpen(true);
+  };
+
+  const openSignUpModal = (reason?: any) => {
+    setAuthPromptReason(typeof reason === 'string' ? reason : null);
+    setAuthModalMode('signup');
+    setAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+    setAuthPromptReason(null);
+  };
+
   return (
     <ShopContext.Provider
       value={{
@@ -368,6 +564,25 @@ export function ShopProvider({ children }: { children: ReactNode }) {
         updateStoreSettings,
         getProductById,
         getProductBySlug,
+
+        // Customer Auth
+        currentUser,
+        isCustomerLoggedIn: Boolean(currentUser),
+        loginWithGoogle,
+        loginWithEmail,
+        registerCustomer,
+        logoutCustomer,
+        updateCustomerProfile,
+
+        // Modal
+        authModalOpen,
+        setAuthModalOpen,
+        authModalMode,
+        setAuthModalMode,
+        authPromptReason,
+        openLoginModal,
+        openSignUpModal,
+        closeAuthModal,
       }}
     >
       {children}

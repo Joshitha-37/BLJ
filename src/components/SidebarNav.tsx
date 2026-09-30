@@ -16,13 +16,22 @@ import {
   Menu,
   X,
   ChevronRight,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { COMPANY_INFO } from '../data/company';
 import { useShop } from '../context/ShopContext';
 
 export default function SidebarNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { cartCount, wishlist } = useShop();
+  const {
+    cartCount,
+    wishlist,
+    currentUser,
+    isCustomerLoggedIn,
+    openLoginModal,
+    logoutCustomer,
+  } = useShop();
   const [isAdminActive, setIsAdminActive] = useState(false);
 
   useEffect(() => {
@@ -50,7 +59,12 @@ export default function SidebarNav() {
       icon: ShoppingCart,
       count: cartCount > 0 ? cartCount : undefined,
     },
-    { name: 'ACCOUNT', path: '/account', icon: User },
+    {
+      name: 'ACCOUNT',
+      path: '/account',
+      icon: User,
+      badgeText: isCustomerLoggedIn ? 'Active' : 'Login',
+    },
     { name: 'RETURN POLICY', path: '/return-policy', icon: FileText },
     {
       name: 'ADMIN HUB',
@@ -99,6 +113,57 @@ export default function SidebarNav() {
           <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
           <span className="truncate">{COMPANY_INFO.address.shortLocation}</span>
         </div>
+
+        {/* Customer Account Status & Quick Auth */}
+        {isCustomerLoggedIn && currentUser ? (
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+            <Link
+              to="/account"
+              onClick={closeMobile}
+              className="flex items-center gap-2.5 truncate hover:text-indigo-300 transition-colors flex-1"
+            >
+              {currentUser.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt={currentUser.fullName}
+                  className="w-7 h-7 rounded-lg object-cover border border-indigo-500 shrink-0"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                  {currentUser.fullName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="truncate text-left">
+                <span className="text-white font-bold block truncate text-[11px] leading-tight">
+                  {currentUser.fullName}
+                </span>
+                <span className="text-emerald-400 text-[10px] block truncate leading-tight mt-0.5">
+                  Verified Member
+                </span>
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={logoutCustomer}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors ml-1 cursor-pointer shrink-0"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              closeMobile();
+              openLoginModal();
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-500 text-indigo-300 hover:text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Customer Sign In / Register</span>
+          </button>
+        )}
 
         {/* 2. Navigation Menu */}
         <div className="space-y-1 pt-1 text-left">
